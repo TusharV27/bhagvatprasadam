@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fetch Data from API</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+        #data {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fetch Data from API Example</h1>
+    <button id="fetch-button">Fetch Data</button>
+    <div id="data"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', fetchData); // Fetch data on page load
+        document.getElementById('fetch-button').addEventListener('click', fetchData);
+
+        function fetchData() {
+            const apiUrl = 'http://localhost:5000/fetch'; // Example API URL
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    displayData(data);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
+                });
+        }
+
+        function displayData(data) {
+            // Assuming data is an array and you want to display the first item's URL
+            if (data.length > 0) {
+                document.getElementById('data').innerText = 'Fetched URL: ' + data[0].url;
+            } else {
+                document.getElementById('data').innerText = 'No data available';
+            }
+        }
+    </script>
+</body>
+</html>
