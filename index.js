@@ -97,8 +97,7 @@ const urlSchema = new mongoose.Schema({
 
 const Url = mongoose.model("Url", urlSchema);
 
-app.get("/", async (req, res) => {
-  const urls = await Url.find(); // Fetch existing URLs
+app.get("/", async (req, res) => {// Fetch existing URLs
   res.send(`
         <!DOCTYPE html>
         <html lang="en">
