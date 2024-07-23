@@ -147,7 +147,6 @@ app.get("/", async (req, res) => {
                 <input type="submit" value="Add Video">
             </form>
             <div id="alert" class="alert" style="display: none;">URL added successfully!</div>
-            <iframe src="${urls[0].url}" width="100%" height="500"></iframe>
             <script>
                 function showAlert() {
                     document.getElementById('alert').style.display = 'block';
