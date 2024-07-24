@@ -161,20 +161,27 @@ app.get("/", async (req, res) => {// Fetch existing URLs
 
 app.post("/", async (req, res) => {
   const { url } = req.body;
+  
+  // Assuming 'Url' is a Mongoose model for storing URLs
 
-  try {
+try {
+    const urlParts = url.split("/");
+    const videoId = urlParts[urlParts.length - 1];
+
     // Remove the old URL if it exists
-    await Url.deleteMany({}); // Deletes all existing URLs
+    await Url.deleteMany({});
 
     // Save the new URL
-    const newUrl = new Url({ url });
+    const newUrl = new Url({ url: "https://www.youtube.com/embed/" + videoId });
     await newUrl.save();
 
     res.redirect("/");
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Error saving URL");
-  }
+} catch (error) {
+    // Handle any errors that occur during deletion or saving
+    console.error("Error:", error);
+    res.status(500).send("Internal Server Error");
+}
+
 });
 
 app.get("/fetch", async (req, res) => {

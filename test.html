@@ -1,0 +1,47 @@
+<!-- <!DOCTYPE html>
+<html>
+
+<head>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            const apiUrl = 'https://bhagvatprasadam.onrender.com/fetch'; // Example API URL
+
+            fetch(apiUrl)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok ' + response.statusText);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(data[0].url)
+                    $("#video").attr("src", data[0].url);
+                })
+                .catch(error => {
+                    console.error('There was a problem with the fetch operation:', error);
+                    document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
+                });
+        });
+    </script>
+</head>
+
+<body>
+    <iframe id="video" src="" frameborder="0"></iframe>
+</body>
+
+</html> -->
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <img src="https://www.instagram.com/p/C9v6ljkykaX/?utm_source=ig_web_button_share_sheet" height="600" width="600" id="video" alt="">
+</body>
+</html>
+
