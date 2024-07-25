@@ -1,56 +1,118 @@
-<!-- <!DOCTYPE html>
-<html>
-
-<head>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            const apiUrl = 'https://bhagvatprasadam.onrender.com/fetch'; // Example API URL
-
-            fetch(apiUrl)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok ' + response.statusText);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    console.log(data[0].url)
-                    $("#video").attr("src", data[0].url);
-                })
-                .catch(error => {
-                    console.error('There was a problem with the fetch operation:', error);
-                    document.getElementById('data').innerText = 'Error fetching data: ' + error.message;
-                });
-        });
-    </script>
-</head>
-
-<body>
-    <iframe id="video" src="" frameborder="0"></iframe>
-</body>
-
-</html> -->
-
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Add Video and Photo URLs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+        h1 {
+            color: #333;
+        }
+        .tab {
+            display: none;
+        }
+        .active {
+            display: block;
+        }
+        .tabs {
+            margin-bottom: 20px;
+        }
+        .tablinks {
+            padding: 10px;
+            cursor: pointer;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            margin-right: 5px;
+        }
+        .tablinks:hover {
+            background-color: #4cae4c;
+        }
+        input[type="text"] {
+            padding: 10px;
+            width: 300px;
+            margin-right: 10px;
+            margin-bottom: 5px; /* Add margin bottom for spacing between inputs */
+        }
+        input[type="submit"] {
+            padding: 10px 15px;
+            background-color: #5cb85c;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        input[type="submit"]:hover {
+            background-color: #4cae4c;
+        }
+        .alert {
+            color: green;
+            font-weight: bold;
+            margin-top: 10px; /* Add margin top for spacing below form */
+        }
+    </style>
 </head>
 <body>
-    <iframe
-    id="video"
-    width="560"
-    height="315"
-    src="https://www.youtube.com/embed/kgQml4nXem0?si=wjqYTvq082PULb7j"
-    title="YouTube video player"
-    frameborder="0"
-    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-    allowfullscreen
-  ></iframe>
+    <h1>Add URLs</h1>
+    <div class="tabs">
+        <button class="tablinks" onclick="openTab(event, 'videoTab')">Add Video URL</button>
+        <button class="tablinks" onclick="openTab(event, 'photoTab')">Add Photo URLs</button>
+    </div>
+    
+    <div id="videoTab" class="tab active">
+        <form action="/add-video" method="POST" onsubmit="showAlert('videoTab')">
+            <input type="text" name="url" placeholder="Enter Video URL" required>
+            <input type="submit" value="Add Video">
+        </form>
+        <div id="videoAlert" class="alert" style="display: none;">Video URL added successfully!</div>
+    </div>
+
+    <div id="photoTab" class="tab">
+        <form id="photoForm" action="/add-photos" method="POST" onsubmit="showAlert('photoTab')">
+            <input type="number" id="photoCount" name="photoCount" placeholder="Number of Photos" required min="1">
+            <div id="photoInputs"></div>
+            <input type="submit" value="Add Photos">
+        </form>
+        <div id="photoAlert" class="alert" style="display: none;">Photo URLs added successfully!</div>
+    </div>
+
+    <script>
+        function openTab(evt, tabName) {
+            var i, tabcontent, tablinks;
+            tabcontent = document.getElementsByClassName("tab");
+            for (i = 0; i < tabcontent.length; i++) {
+                tabcontent[i].style.display = "none";  
+            }
+            tablinks = document.getElementsByClassName("tablinks");
+            for (i = 0; i < tablinks.length; i++) {
+                tablinks[i].className = tablinks[i].className.replace(" active", "");
+            }
+            document.getElementById(tabName).style.display = "block";  
+            evt.currentTarget.className += " active";
+        }
+
+        function showAlert(tabName) {
+            var alertId = tabName === 'videoTab' ? 'videoAlert' : 'photoAlert';
+            document.getElementById(alertId).style.display = 'block';
+            setTimeout(() => {
+                document.getElementById(alertId).style.display = 'none';
+            }, 3000);
+        }
+
+        // Function to dynamically generate photo URL input fields
+        document.getElementById('photoCount').addEventListener('input', function() {
+            var count = parseInt(this.value);
+            var html = '';
+            for (var i = 0; i < count; i++) {
+                html += '<input type="text" name="photoUrls[]" placeholder="Enter Photo URL ' + (i + 1) + '" required><br>';
+            }
+            document.getElementById('photoInputs').innerHTML = html;
+        });
+    </script>
 </body>
 </html>
-

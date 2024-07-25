@@ -197,6 +197,7 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const puppeteer = require('puppeteer');
 
 const app = express();
 
@@ -238,7 +239,7 @@ app.get("/", async (req, res) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Video and Photo URLs</title>
+    <title>Add Video and Photo</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -250,30 +251,38 @@ app.get("/", async (req, res) => {
             color: #333;
         }
         .tab {
-            display: none;
-        }
-        .active {
-            display: block;
-        }
-        .tabs {
+            overflow: hidden;
+            border-bottom: 1px solid #ccc;
             margin-bottom: 20px;
         }
-        .tablinks {
-            padding: 10px;
-            cursor: pointer;
-            background-color: #5cb85c;
-            color: white;
+        .tab button {
+            background-color: inherit;
             border: none;
-            margin-right: 5px;
+            outline: none;
+            cursor: pointer;
+            padding: 10px 20px;
+            transition: background-color 0.3s ease;
         }
-        .tablinks:hover {
-            background-color: #4cae4c;
+        .tab button:hover {
+            background-color: #ddd;
+        }
+        .tab button.active {
+            background-color: #fff;
+            border-bottom: 2px solid #5cb85c;
+        }
+        .tabcontent {
+            display: none;
+        }
+        .tabcontent.active {
+            display: block;
+        }
+        form {
+            margin-bottom: 20px;
         }
         input[type="text"] {
             padding: 10px;
             width: 300px;
             margin-right: 10px;
-            margin-bottom: 5px; /* Add margin bottom for spacing between inputs */
         }
         input[type="submit"] {
             padding: 10px 15px;
@@ -288,66 +297,57 @@ app.get("/", async (req, res) => {
         .alert {
             color: green;
             font-weight: bold;
-            margin-top: 10px; /* Add margin top for spacing below form */
         }
     </style>
 </head>
 <body>
-    <h1>Add URLs</h1>
-    <div class="tabs">
-        <button class="tablinks" onclick="openTab(event, 'videoTab')">Add Video URL</button>
-        <button class="tablinks" onclick="openTab(event, 'photoTab')">Add Photo URLs</button>
+    <h1>Add Video and Photo URLs</h1>
+    
+    <div class="tab">
+        <button class="tablinks active" onclick="openTab(event, 'video')">Add Video</button>
+        <button class="tablinks" onclick="openTab(event, 'photo')">Add Photo</button>
     </div>
     
-    <div id="videoTab" class="tab active">
-        <form action="/add-video" method="POST" onsubmit="showAlert('videoTab')">
-            <input type="text" name="url" placeholder="Enter Video URL" required>
-            <input type="submit" value="Add Video">
+    <div id="video" class="tabcontent active">
+        <form action="/add-video" method="POST" onsubmit="showAlert('video-alert')">
+            <label for="video-url">Video URL:</label>
+            <input type="text" id="video-url" name="url" placeholder="Enter Video URL" required>
+            <input type="submit" value="Add">
         </form>
-        <div id="videoAlert" class="alert" style="display: none;">Video URL added successfully!</div>
+        <div id="video-alert" class="alert" style="display: none;">Video URL added successfully!</div>
     </div>
-
-    <div id="photoTab" class="tab">
-        <form id="photoForm" action="/add-photos" method="POST" onsubmit="showAlert('photoTab')">
-            <input type="number" id="photoCount" name="photoCount" placeholder="Number of Photos" required min="1">
-            <div id="photoInputs"></div>
-            <input type="submit" value="Add Photos">
+    
+    <div id="photo" class="tabcontent">
+        <form action="/add-photos" method="POST" onsubmit="showAlert('photo-alert')">
+            <label for="photo-url">Photo URL:</label>
+            <input type="text" id="photo-url" name="instagramUrl" placeholder="Enter Photo URL" required>
+            <input type="submit" value="Add">
         </form>
-        <div id="photoAlert" class="alert" style="display: none;">Photo URLs added successfully!</div>
+        <div id="photo-alert" class="alert" style="display: none;">Photo URL added successfully!</div>
     </div>
-
+    
     <script>
         function openTab(evt, tabName) {
             var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tab");
+            tabcontent = document.getElementsByClassName("tabcontent");
             for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].style.display = "none";  
+                tabcontent[i].classList.remove("active");
             }
             tablinks = document.getElementsByClassName("tablinks");
             for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].className = tablinks[i].className.replace(" active", "");
+                tablinks[i].classList.remove("active");
             }
-            document.getElementById(tabName).style.display = "block";  
-            evt.currentTarget.className += " active";
+            document.getElementById(tabName).classList.add("active");
+            evt.currentTarget.classList.add("active");
         }
-
-        function showAlert(tabName) {
-            var alertId = tabName === 'videoTab' ? 'videoAlert' : 'photoAlert';
-            document.getElementById(alertId).style.display = 'block';
-            setTimeout(() => {
-                document.getElementById(alertId).style.display = 'none';
+        
+        function showAlert(alertId) {
+            var alertElement = document.getElementById(alertId);
+            alertElement.style.display = 'block';
+            setTimeout(function() {
+                alertElement.style.display = 'none';
             }, 3000);
         }
-
-        // Function to dynamically generate photo URL input fields
-        document.getElementById('photoCount').addEventListener('input', function() {
-            var count = parseInt(this.value);
-            var html = '';
-            for (var i = 0; i < count; i++) {
-                html += '<input type="text" name="photoUrls[]" placeholder="Enter Photo URL ' + (i + 1) + '" required><br>';
-            }
-            document.getElementById('photoInputs').innerHTML = html;
-        });
     </script>
 </body>
 </html>
@@ -357,7 +357,6 @@ app.get("/", async (req, res) => {
 
 app.post("/add-video", async (req, res) => {
   const { url } = req.body;
-  
   try {
     const urlParts = url.split("/");
     const videoId = urlParts[urlParts.length - 1];
@@ -365,28 +364,81 @@ app.post("/add-video", async (req, res) => {
     // Save the new video URL
     const newUrl = new Url({ type: 'video', url: "https://www.youtube.com/embed/" + videoId });
     await newUrl.save();
-    console.log("video")
     res.redirect("/");
   } catch (error) {
     console.error("Error:", error);
     res.status(500).send("Internal Server Error");
   }
 });
+
+// app.post("/add-photos", async (req, res) => {
+//   try {
+//     // Save the new photo URL
+//     const newUrl = new photo({ photo: req.body.photoUrls });
+//     await photo.deleteMany({});
+//     console.log(req.body.photoUrls)
+//     await newUrl.save();
+//     res.redirect("/");
+//   } catch (error) {
+//     console.error("Error:", error);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 app.post("/add-photos", async (req, res) => {
-  try {
-    // Save the new photo URL
-    const newUrl = new photo({ photo: req.body.photoUrls });
-    await photo.deleteMany({});
-    console.log(req.body.photoUrls)
-    await newUrl.save();
+    const { instagramUrl } = req.body; // Assuming you send the Instagram URL in req.body.instagramUrl
 
-    res.redirect("/");
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).send("Internal Server Error");
-  }
+    if (!instagramUrl) {
+        return res.status(400).send('Missing Instagram URL in request body');
+    }
+
+    try {
+        const browser = await puppeteer.launch({
+            headless: true, // Run in headless mode
+            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+        });
+
+        const page = await browser.newPage();
+
+        page.on('dialog', async dialog => {
+            console.log(`Dialog message: ${dialog.message()}`);
+            await dialog.accept();
+        });
+
+        await page.goto(instagramUrl, { waitUntil: 'networkidle2' });
+
+        await page.waitForSelector('img[decoding="auto"]');
+
+        const imageLinks = await page.evaluate(() => {
+            const images = document.querySelectorAll('img[decoding="auto"]');
+            const validImageLinks = [];
+
+            images.forEach(img => {
+                // Example filter criteria: Select images with specific width and height
+                if (img.width >= 300 && img.height >= 300) {
+                    validImageLinks.push(img.src);
+                }
+            });
+
+            return validImageLinks;
+        });
+
+        // console.log(imageLinks);
+
+        // Here you can store or further process the filtered image links
+        const newUrl = new photo({ photo: imageLinks });
+        await photo.deleteMany({});
+        await newUrl.save();
+
+        await browser.close();
+        
+        res.redirect("/");
+    } catch (error) {
+        console.error('Puppeteer error:', error);
+        res.status(500).send("Internal Server Error");
+    }
 });
+
 
 app.get("/fetch", async (req, res) => {
   const urls = await Url.find(); // Fetch existing URLs
