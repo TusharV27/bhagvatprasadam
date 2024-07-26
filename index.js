@@ -232,7 +232,14 @@ const photoSchema = new mongoose.Schema({
 
 const photo = mongoose.model("photo", photoSchema);
 
-app.get("/", async (req, res) => {
+const userSchema = new mongoose.Schema({
+    userId: String,
+    password: String
+});
+
+const User = mongoose.model('User', userSchema);
+
+app.get("/add-photo-video", async (req, res) => {
   res.send(`
         <!DOCTYPE html>
 <html lang="en">
@@ -306,6 +313,7 @@ app.get("/", async (req, res) => {
     <div class="tab">
         <button class="tablinks active" onclick="openTab(event, 'video')">Add Video</button>
         <button class="tablinks" onclick="openTab(event, 'photo')">Add Photo</button>
+        <button class="tablinks" onclick="sessionStorage.clear()">Logout</button>
     </div>
     
     <div id="video" class="tabcontent active">
@@ -327,6 +335,21 @@ app.get("/", async (req, res) => {
     </div>
     
     <script>
+
+        async function promptForCredentials() {
+            const user = sessionStorage.getItem('userId');
+            if (user) {
+                console.log(user);
+                return;
+            } else {
+             window.location.pathname = '/';
+            }
+        }
+
+        window.onload = promptForCredentials;
+        setInterval(promptForCredentials, 1000);
+
+
         function openTab(evt, tabName) {
             var i, tabcontent, tablinks;
             tabcontent = document.getElementsByClassName("tabcontent");
@@ -353,6 +376,121 @@ app.get("/", async (req, res) => {
 </html>
 
     `);
+});
+
+
+app.get("/", async (req, res) => {
+    res.send(`
+            <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login Prompt</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        h1 {
+            color: #333;
+        }
+        p {
+            color: #666;
+        }
+        .container {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            margin: 20px;
+            font-size: 16px;
+            color: #fff;
+            background-color: #007bff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+    <script>
+        async function promptForCredentials() {
+            const user = sessionStorage.getItem('userId');
+            if (user) {
+                window.location.pathname = '/add-photo-video';
+                return;
+            } else {
+                const userId = prompt("Please enter your User ID:");
+                const password = prompt("Please enter your Password:");
+                if (userId && password) {
+                    try {
+                        const response = await fetch('/login', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({ userId, password })
+                        });
+
+                        const result = await response.json();
+                        sessionStorage.setItem('userId', result.user);
+                        if (result.message === 'Login successful') {
+                            window.location.pathname = '/add-photo-video';
+                return;
+                        }
+                        alert(result.message);
+                    } catch (error) {
+                        alert('An error occurred');
+                    }
+                } else {
+                    alert("User ID and Password are required.");
+                }
+            }
+        }
+
+        window.onload = promptForCredentials;
+    </script>
+</head>
+<body>
+    <div class="container">
+        <h1>Welcome to the Bhagvat Prasadam Login Page</h1>
+        <p>Please enter your credentials to proceed.</p>
+    </div>
+</body>
+</html>
+
+
+    `)
+})
+
+app.post('/login', async (req, res) => {
+    const { userId, password } = req.body;
+    console.log(userId, password);
+    try {
+        const user = await User.findOne({ userId: userId, password: password });
+
+        if (user) {
+            res.json({ message: 'Login successful', user: userId });
+        } else {
+            res.json({ message: 'Invalid credentials' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 app.post("/add-video", async (req, res) => {
@@ -449,3 +587,6 @@ app.get("/fetch", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
 });
+
+
+
