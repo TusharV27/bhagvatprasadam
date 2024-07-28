@@ -232,150 +232,35 @@ const photoSchema = new mongoose.Schema({
 
 const photo = mongoose.model("photo", photoSchema);
 
+// const userSchema = new mongoose.Schema({
+//     userId: String,
+//     password: String,
+//     role: String
+// });
+
 const userSchema = new mongoose.Schema({
     userId: String,
-    password: String
+    password: String,
+    role: String,
+    username: { type: String, unique: true, required: true } // Make sure to handle uniqueness and required
 });
-
 const User = mongoose.model('User', userSchema);
 
+// async function adminPage() {
+//     const user = await User.findOne();
+//     console.log(user)
+//     const data = await User.create({
+//         userId:"user12",
+//         password:"user12",
+//         role:"user",
+//         username:"user12"
+//     })
+// }
+
+// adminPage()
+
 app.get("/add-photo-video", async (req, res) => {
-  res.send(`
-        <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Video and Photo</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            padding: 20px;
-            background-color: #f4f4f4;
-        }
-        h1 {
-            color: #333;
-        }
-        .tab {
-            overflow: hidden;
-            border-bottom: 1px solid #ccc;
-            margin-bottom: 20px;
-        }
-        .tab button {
-            background-color: inherit;
-            border: none;
-            outline: none;
-            cursor: pointer;
-            padding: 10px 20px;
-            transition: background-color 0.3s ease;
-        }
-        .tab button:hover {
-            background-color: #ddd;
-        }
-        .tab button.active {
-            background-color: #fff;
-            border-bottom: 2px solid #5cb85c;
-        }
-        .tabcontent {
-            display: none;
-        }
-        .tabcontent.active {
-            display: block;
-        }
-        form {
-            margin-bottom: 20px;
-        }
-        input[type="text"] {
-            padding: 10px;
-            width: 300px;
-            margin-right: 10px;
-        }
-        input[type="submit"] {
-            padding: 10px 15px;
-            background-color: #5cb85c;
-            color: white;
-            border: none;
-            cursor: pointer;
-        }
-        input[type="submit"]:hover {
-            background-color: #4cae4c;
-        }
-        .alert {
-            color: green;
-            font-weight: bold;
-        }
-    </style>
-</head>
-<body>
-    <h1>Add Video and Photo URLs</h1>
-    
-    <div class="tab">
-        <button class="tablinks active" onclick="openTab(event, 'video')">Add Video</button>
-        <button class="tablinks" onclick="openTab(event, 'photo')">Add Photo</button>
-        <button class="tablinks" onclick="sessionStorage.clear()">Logout</button>
-    </div>
-    
-    <div id="video" class="tabcontent active">
-        <form action="/add-video" method="POST" onsubmit="showAlert('video-alert')">
-            <label for="video-url">Video URL:</label>
-            <input type="text" id="video-url" name="url" placeholder="Enter Video URL" required>
-            <input type="submit" value="Add">
-        </form>
-        <div id="video-alert" class="alert" style="display: none;">Video URL added successfully!</div>
-    </div>
-    
-    <div id="photo" class="tabcontent">
-        <form action="/add-photos" method="POST" onsubmit="showAlert('photo-alert')">
-            <label for="photo-url">Photo URL:</label>
-            <input type="text" id="photo-url" name="instagramUrl" placeholder="Enter Photo URL" required>
-            <input type="submit" value="Add">
-        </form>
-        <div id="photo-alert" class="alert" style="display: none;">Photo URL added successfully!</div>
-    </div>
-    
-    <script>
-
-        async function promptForCredentials() {
-            const user = sessionStorage.getItem('userId');
-            if (user) {
-                console.log(user);
-                return;
-            } else {
-             window.location.pathname = '/';
-            }
-        }
-
-        window.onload = promptForCredentials;
-        setInterval(promptForCredentials, 1000);
-
-
-        function openTab(evt, tabName) {
-            var i, tabcontent, tablinks;
-            tabcontent = document.getElementsByClassName("tabcontent");
-            for (i = 0; i < tabcontent.length; i++) {
-                tabcontent[i].classList.remove("active");
-            }
-            tablinks = document.getElementsByClassName("tablinks");
-            for (i = 0; i < tablinks.length; i++) {
-                tablinks[i].classList.remove("active");
-            }
-            document.getElementById(tabName).classList.add("active");
-            evt.currentTarget.classList.add("active");
-        }
-        
-        function showAlert(alertId) {
-            var alertElement = document.getElementById(alertId);
-            alertElement.style.display = 'block';
-            setTimeout(function() {
-                alertElement.style.display = 'none';
-            }, 3000);
-        }
-    </script>
-</body>
-</html>
-
-    `);
+    res.sendFile("index.html", { root: __dirname });
 });
 
 
@@ -448,6 +333,7 @@ app.get("/", async (req, res) => {
 
                         const result = await response.json();
                         sessionStorage.setItem('userId', result.user);
+                        sessionStorage.setItem('role', result.role);
                         if (result.message === 'Login successful') {
                             window.location.pathname = '/add-photo-video';
                 return;
@@ -477,6 +363,19 @@ app.get("/", async (req, res) => {
     `)
 })
 
+app.get('/fetch-users', async (req, res) => {
+    try {
+        const users = await User.find();
+        res.json(users);
+    } catch (error) {
+        console.error('Error fetching users:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+});
+
+
+
+
 app.post('/login', async (req, res) => {
     const { userId, password } = req.body;
     console.log(userId, password);
@@ -484,7 +383,7 @@ app.post('/login', async (req, res) => {
         const user = await User.findOne({ userId: userId, password: password });
 
         if (user) {
-            res.json({ message: 'Login successful', user: userId });
+            res.json({ message: 'Login successful', user: userId, role: user.role });
         } else {
             res.json({ message: 'Invalid credentials' });
         }
@@ -583,6 +482,42 @@ app.get("/fetch", async (req, res) => {
   const photos = await photo.find(); // Fetch existing photos
   res.send({urls, photos});
 });
+
+app.post("/add-user", async (req, res) => {
+    const { userId, password, role, username } = req.body;
+    
+    if (!userId || !password || !role || !username) {
+        return res.status(400).send('All fields are required.');
+    }
+
+    try {
+        const newUser = new User({ userId, password, role, username });
+        await newUser.save();
+        res.json({ message: "User added successfully" });
+    } catch (error) {
+        console.error('Error adding user:', error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
+
+app.delete("/delete-user/:userId", async (req, res) => {
+    const { userId } = req.params;
+
+    try {
+        const result = await User.deleteOne({ userId: userId });
+        
+        if (result.deletedCount > 0) {
+            res.json({ message: "User deleted successfully" });
+        } else {
+            res.status(404).json({ message: "User not found" });
+        }
+    } catch (error) {
+        console.error('Error deleting user:', error);
+        res.status(500).json({ message: "Server error" });
+    }
+});
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port: ${PORT}`);
