@@ -393,57 +393,42 @@ app.post('/login', async (req, res) => {
 });
 
 app.post("/add-video", async (req, res) => {
-  const { url } = req.body;
-  try {
-    const urlParts = url.split("/");
-    const videoId = urlParts[urlParts.length - 1];
-    await Url.deleteMany({});
-    // Save the new video URL
-    const newUrl = new Url({ type: 'video', url: "https://www.youtube.com/embed/" + videoId });
-    await newUrl.save();
-    res.redirect("/");
-  } catch (error) {
-    console.error("Error:", error);
-    res.status(500).send("Internal Server Error");
-  }
+    const { url } = req.body;
+    console.log(url);
+    try {
+        const urlParts = url.split("/");
+        const videoId = urlParts[urlParts.length - 1];
+        await Url.deleteMany({});
+        const newUrl = new Url({ url: "https://www.youtube.com/embed/" + videoId });
+        await newUrl.save();
+        res.redirect("/");
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
-// app.post("/add-photos", async (req, res) => {
-//   try {
-//     // Save the new photo URL
-//     const newUrl = new photo({ photo: req.body.photoUrls });
-//     await photo.deleteMany({});
-//     console.log(req.body.photoUrls)
-//     await newUrl.save();
-//     res.redirect("/");
-//   } catch (error) {
-//     console.error("Error:", error);
-//     res.status(500).send("Internal Server Error");
-//   }
-// });
 
 app.post("/add-photos", async (req, res) => {
-    const { instagramUrl } = req.body; // Assuming you send the Instagram URL in req.body.instagramUrl
-
+    const { instagramUrl } = req.body;
+    console.log(instagramUrl);
     if (!instagramUrl) {
         return res.status(400).send('Missing Instagram URL in request body');
     }
 
     try {
         const browser = await puppeteer.launch({
-            headless: true, // Run in headless mode
+            headless: true,
             args: ['--no-sandbox', '--disable-setuid-sandbox'],
         });
 
         const page = await browser.newPage();
-
         page.on('dialog', async dialog => {
             console.log(`Dialog message: ${dialog.message()}`);
             await dialog.accept();
         });
 
         await page.goto(instagramUrl, { waitUntil: 'networkidle2' });
-
         await page.waitForSelector('img[decoding="auto"]');
 
         const imageLinks = await page.evaluate(() => {
@@ -451,7 +436,6 @@ app.post("/add-photos", async (req, res) => {
             const validImageLinks = [];
 
             images.forEach(img => {
-                // Example filter criteria: Select images with specific width and height
                 if (img.width >= 300 && img.height >= 300) {
                     validImageLinks.push(img.src);
                 }
@@ -460,21 +444,17 @@ app.post("/add-photos", async (req, res) => {
             return validImageLinks;
         });
 
-        // console.log(imageLinks);
-
-        // Here you can store or further process the filtered image links
-        const newUrl = new photo({ photo: imageLinks });
         await photo.deleteMany({});
-        await newUrl.save();
-
+        const newPhoto = new photo({ photo: imageLinks });
+        await newPhoto.save();
         await browser.close();
-        
         res.redirect("/");
     } catch (error) {
         console.error('Puppeteer error:', error);
         res.status(500).send("Internal Server Error");
     }
 });
+
 
 
 app.get("/fetch", async (req, res) => {
