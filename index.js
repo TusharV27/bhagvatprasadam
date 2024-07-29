@@ -412,6 +412,7 @@ app.post("/add-video", async (req, res) => {
 app.post("/add-photos", async (req, res) => {
     const { instagramUrl } = req.body;
     console.log(instagramUrl);
+    console.log("Hello");
     if (!instagramUrl) {
         return res.status(400).send('Missing Instagram URL in request body');
     }
