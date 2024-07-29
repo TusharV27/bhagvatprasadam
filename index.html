@@ -499,6 +499,30 @@
     </div>
 
     <div id="photo" class="tabcontent">
+  <form
+    id="photo-form"
+    action="/add-photos"
+    method="POST"
+    enctype="multipart/form-data"
+    onsubmit="showAlert('photo-alert'); return true;"
+  >
+    <label for="photo-files">Select Photos:</label>
+    <input
+      type="file"
+      id="photo-files"
+      name="photos"
+      accept="image/*"
+      multiple
+      required
+    />
+    <input type="submit" value="Upload Photos" />
+  </form>
+  <div id="photo-alert" class="alert" style="display: none;">
+    Photos uploaded successfully!
+  </div>
+</div>
+
+    <!-- <div id="photo" class="tabcontent">
       <form
         action="/add-photos"
         method="POST"
@@ -517,7 +541,7 @@
       <div id="photo-alert" class="alert" style="display: none">
         Photo URL added successfully!
       </div>
-    </div>
+    </div> -->
 
     <div id="admin" class="tabcontent">
       <form id="add-user-form" action="/add-user" method="POST">

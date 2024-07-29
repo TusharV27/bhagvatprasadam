@@ -194,12 +194,30 @@
 // });
 
 // --------------------------------------------------------
-const express = require("express");
-const cors = require("cors");
-const mongoose = require("mongoose");
-const puppeteer = require('puppeteer');
+// const express = require("express");
+// const cors = require("cors");
+// const mongoose = require("mongoose");
+// const multer = require('multer');
+// const fetch = require('node-fetch');
+// const FormData = require('form-data');
+// const Buffer = require('buffer').Buffer;
+// const crypto = require('crypto');
+import express from "express";
+import cors from "cors";
+import mongoose from "mongoose";
+import multer from 'multer';
+import fetch from 'node-fetch';
+import FormData from 'form-data';
+import Buffer from 'buffer';
+import crypto from 'crypto';
+import path from 'path';
+import {fileURLToPath} from 'url'
 
 const app = express();
+const upload = multer({ storage: multer.memoryStorage() });
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 5000;
 
@@ -230,7 +248,11 @@ const photoSchema = new mongoose.Schema({
   },
 });
 
-const photo = mongoose.model("photo", photoSchema);
+const Photo = mongoose.model("photo", photoSchema);
+
+const GITHUB_API_URL = 'https://api.github.com/repos/TusharV27/bhagvatprasadam-images/contents/';
+const GITHUB_TOKEN = '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';
+const FOLDER_PATH = 'PHOTO_FOLDER/';
 
 // const userSchema = new mongoose.Schema({
 //     userId: String,
@@ -260,6 +282,7 @@ const User = mongoose.model('User', userSchema);
 // adminPage()
 
 app.get("/add-photo-video", async (req, res) => {
+    // res.sendFile('index.html', { root: __dirname })
     res.sendFile("index.html", { root: __dirname });
 });
 
@@ -409,52 +432,104 @@ app.post("/add-video", async (req, res) => {
 });
 
 
-app.post("/add-photos", async (req, res) => {
-    const { instagramUrl } = req.body;
-    console.log(instagramUrl);
-    console.log("Hello");
-    if (!instagramUrl) {
-        return res.status(400).send('Missing Instagram URL in request body');
+app.post('/add-photos', upload.array('photos'), async (req, res) => {
+    const files = req.files;
+  
+    if (!files || files.length === 0) {
+      return res.status(400).send('No files uploaded');
     }
-
+  
     try {
-        const browser = await puppeteer.launch({
-            headless: true,
-            args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      // Process all files and get their URLs
+      const imageUrls = await Promise.all(files.map(async (file) => {
+        const base64Content = file.buffer.toString('base64');
+        const filePath = `${FOLDER_PATH}${crypto.randomBytes(16).toString('hex')}_${file.originalname}`; // Generate a unique file name
+  
+        // Log base64 content length and hash for debugging
+        console.log(`Processing file: ${file.originalname}`);
+        console.log(`Base64 Content Length: ${base64Content.length}`);
+  
+        // Upload to GitHub
+        const response = await fetch(GITHUB_API_URL + filePath, {
+          method: 'PUT',
+          headers: {
+            'Authorization': `token ${GITHUB_TOKEN}`,
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.github.v3+json',
+          },
+          body: JSON.stringify({
+            message: 'Upload photo',
+            content: base64Content,
+          }),
         });
-
-        const page = await browser.newPage();
-        page.on('dialog', async dialog => {
-            console.log(`Dialog message: ${dialog.message()}`);
-            await dialog.accept();
-        });
-
-        await page.goto(instagramUrl, { waitUntil: 'networkidle2' });
-        await page.waitForSelector('img[decoding="auto"]');
-
-        const imageLinks = await page.evaluate(() => {
-            const images = document.querySelectorAll('img[decoding="auto"]');
-            const validImageLinks = [];
-
-            images.forEach(img => {
-                if (img.width >= 300 && img.height >= 300) {
-                    validImageLinks.push(img.src);
-                }
-            });
-
-            return validImageLinks;
-        });
-
-        await photo.deleteMany({});
-        const newPhoto = new photo({ photo: imageLinks });
-        await newPhoto.save();
-        await browser.close();
-        res.redirect("/");
+  
+        const jsonResponse = await response.json();
+        if (response.ok) {
+          console.log(`Uploaded ${file.originalname}: ${jsonResponse.content.download_url}`);
+          return jsonResponse.content.download_url; // Return the URL of the uploaded file
+        } else {
+          throw new Error(`Failed to upload ${file.originalname}: ${jsonResponse.message}`);
+        }
+      }));
+  
+      // Save the URLs to MongoDB
+      await Photo.deleteMany({});
+      const newPhoto = new Photo({ photo: imageUrls });
+      await newPhoto.save();
+  
+      res.redirect('/');
     } catch (error) {
-        console.error('Puppeteer error:', error);
-        res.status(500).send("Internal Server Error");
+      console.error('Error:', error);
+      res.status(500).send('Internal Server Error');
     }
-});
+  });
+
+// app.post("/add-photos", async (req, res) => {
+//     const { instagramUrl } = req.body;
+//     console.log(instagramUrl);
+//     console.log("Hello");
+//     if (!instagramUrl) {
+//         return res.status(400).send('Missing Instagram URL in request body');
+//     }
+
+//     try {
+//         const browser = await puppeteer.launch({
+//             headless: true,
+//             args: ['--no-sandbox', '--disable-setuid-sandbox'],
+//         });
+
+//         const page = await browser.newPage();
+//         page.on('dialog', async dialog => {
+//             console.log(`Dialog message: ${dialog.message()}`);
+//             await dialog.accept();
+//         });
+
+//         await page.goto(instagramUrl, { waitUntil: 'networkidle2' });
+//         await page.waitForSelector('img[decoding="auto"]');
+
+//         const imageLinks = await page.evaluate(() => {
+//             const images = document.querySelectorAll('img[decoding="auto"]');
+//             const validImageLinks = [];
+
+//             images.forEach(img => {
+//                 if (img.width >= 300 && img.height >= 300) {
+//                     validImageLinks.push(img.src);
+//                 }
+//             });
+
+//             return validImageLinks;
+//         });
+
+//         await photo.deleteMany({});
+//         const newPhoto = new photo({ photo: imageLinks });
+//         await newPhoto.save();
+//         await browser.close();
+//         res.redirect("/");
+//     } catch (error) {
+//         console.error('Puppeteer error:', error);
+//         res.status(500).send("Internal Server Error");
+//     }
+// });
 
 
 
