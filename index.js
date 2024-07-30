@@ -29,7 +29,7 @@ app.use(express.urlencoded({ extended: true }));
 // PORT=5000
 
 const GITHUB_API_URL = "https://api.github.com/repos/TusharV27/bhagvatprasadam-images/contents/"; // Use environment variable
-const GITHUB_TOKEN = "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"; 
+const GITHUB_TOKEN = "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"; 
 const tushar = "abc"
 
 
