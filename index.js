@@ -23,8 +23,17 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+
+// GITHUB_API_URL=
+// GITHUB_TOKEN=
+// PORT=5000
+
+const GITHUB_API_URL = "https://api.github.com/repos/TusharV27/bhagvatprasadam-images/contents/"; // Use environment variable
+const GITHUB_TOKEN = "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"; 
+
+
 mongoose
-  .connect(process.env.MONGO_URI) // Use environment variable
+  .connect("mongodb+srv://tusharmegascale:tushar123@cluster0.xlfpxzg.mongodb.net/bhagvatprasadam") // Use environment variable
   .then(() => {
     console.log("MongoDB connected");
   })
@@ -48,8 +57,7 @@ const photoSchema = new mongoose.Schema({
 
 const Photo = mongoose.model("photo", photoSchema);
 
-const GITHUB_API_URL = process.env.GITHUB_API_URL; // Use environment variable
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN; // Use environment variable
+// Use environment variable
 const FOLDER_PATH = 'PHOTO_FOLDER/';
 
 const userSchema = new mongoose.Schema({
@@ -306,6 +314,6 @@ app.delete("/delete-user/:userId", async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+app.listen(5000, () => {
   console.log(`Server is running on port: ${PORT}`);
 });
