@@ -3,14 +3,13 @@ import cors from "cors";
 import mongoose from "mongoose";
 import multer from 'multer';
 import fetch from 'node-fetch';
-import FormData from 'form-data';
-import Buffer from 'buffer';
 import crypto from 'crypto';
 import path from 'path';
 import {fileURLToPath} from 'url';
 import dotenv from 'dotenv'; // Add this line
 
 dotenv.config(); // Add this line
+console.log("Hello")
 
 const app = express();
 const upload = multer({ storage: multer.memoryStorage() });
