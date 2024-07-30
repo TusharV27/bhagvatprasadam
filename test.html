@@ -70,3 +70,49 @@ setInterval(slideNext, 3000);
     </script>
 </body>
 </html>
+
+
+
+<div id="photo" class="tabcontent">
+    <form
+      id="photo-form"
+      action="/add-photos"
+      method="POST"
+      enctype="multipart/form-data"
+      onsubmit="return validateFileSelection()"
+    >
+      <label for="photo-file">Select Photo:</label>
+      <input
+        type="file"
+        id="photo-file"
+        name="photo"
+        accept="image/*"
+        required
+      />
+      <input type="submit" value="Upload Photo" />
+    </form>
+    <div id="photo-alert" class="alert" style="display: none;">
+      Photo uploaded successfully!
+    </div>
+  </div>
+  
+  <script>
+    function validateFileSelection() {
+      const fileInput = document.getElementById('photo-file');
+      if (fileInput.files.length !== 1) {
+        alert('Please select exactly one image.');
+        return false;
+      }
+      showAlert('photo-alert');
+      return true;
+    }
+  
+    function showAlert(alertId) {
+      const alertElement = document.getElementById(alertId);
+      alertElement.style.display = 'block';
+      setTimeout(() => {
+        alertElement.style.display = 'none';
+      }, 3000); // Hide the alert after 3 seconds
+    }
+  </script>
+  

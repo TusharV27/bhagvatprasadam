@@ -440,49 +440,177 @@ app.post('/add-photos', upload.array('photos'), async (req, res) => {
     }
   
     try {
-      // Process all files and get their URLs
-      const imageUrls = await Promise.all(files.map(async (file) => {
-        const base64Content = file.buffer.toString('base64');
-        const filePath = `${FOLDER_PATH}${crypto.randomBytes(16).toString('hex')}_${file.originalname}`; // Generate a unique file name
+      const imageUrls = [];
   
-        // Log base64 content length and hash for debugging
+      for (const file of files) {
+        const base64Content = file.buffer.toString('base64');
+        const filePath = `${FOLDER_PATH}${crypto.randomBytes(16).toString('hex')}_${file.originalname}`;
+  
         console.log(`Processing file: ${file.originalname}`);
         console.log(`Base64 Content Length: ${base64Content.length}`);
   
-        // Upload to GitHub
-        const response = await fetch(GITHUB_API_URL + filePath, {
-          method: 'PUT',
-          headers: {
-            'Authorization': `token ${GITHUB_TOKEN}`,
-            'Content-Type': 'application/json',
-            'Accept': 'application/vnd.github.v3+json',
-          },
-          body: JSON.stringify({
-            message: 'Upload photo',
-            content: base64Content,
-          }),
-        });
+        try {
+          // Upload to GitHub
+          const response = await fetch(GITHUB_API_URL + filePath, {
+            method: 'PUT',
+            headers: {
+              'Authorization': `token ${GITHUB_TOKEN}`,
+              'Content-Type': 'application/json',
+              'Accept': 'application/vnd.github.v3+json',
+            },
+            body: JSON.stringify({
+              message: 'Upload photo',
+              content: base64Content,
+            }),
+          });
   
-        const jsonResponse = await response.json();
-        if (response.ok) {
+          if (!response.ok) {
+            const errorResponse = await response.json();
+            throw new Error(`GitHub API Error: ${errorResponse.message}`);
+          }
+  
+          const jsonResponse = await response.json();
           console.log(`Uploaded ${file.originalname}: ${jsonResponse.content.download_url}`);
-          return jsonResponse.content.download_url; // Return the URL of the uploaded file
-        } else {
-          throw new Error(`Failed to upload ${file.originalname}: ${jsonResponse.message}`);
+          imageUrls.push(jsonResponse.content.download_url);
+        } catch (uploadError) {
+          console.error(`Error uploading ${file.originalname}:`, uploadError);
+          // You might choose to continue with the next file or halt depending on requirements
+          // Continue processing other files
         }
-      }));
+      }
   
       // Save the URLs to MongoDB
-      await Photo.deleteMany({});
-      const newPhoto = new Photo({ photo: imageUrls });
-      await newPhoto.save();
-  
-      res.redirect('/');
+      try {
+        await Photo.deleteMany({});
+        const newPhoto = new Photo({ photo: imageUrls });
+        await newPhoto.save();
+        res.redirect('/');
+      } catch (dbError) {
+        console.error('Database Error:', dbError);
+        res.status(500).send('Failed to save photo URLs to database');
+      }
     } catch (error) {
       console.error('Error:', error);
       res.status(500).send('Internal Server Error');
     }
   });
+
+
+
+// app.post('/add-photos', upload.array('photos'), async (req, res) => {
+//     const files = req.files;
+  
+//     if (!files || files.length === 0) {
+//       return res.status(400).send('No files uploaded');
+//     }
+  
+//     try {
+//       // Process all files and get their URLs
+//       const imageUrls = await Promise.all(files.map(async (file) => {
+//         const base64Content = file.buffer.toString('base64');
+//         const filePath = `${FOLDER_PATH}${crypto.randomBytes(16).toString('hex')}_${file.originalname}`; // Generate a unique file name
+  
+//         // Log base64 content length and hash for debugging
+//         console.log(`Processing file: ${file.originalname}`);
+//         console.log(`Base64 Content Length: ${base64Content.length}`);
+  
+//         try {
+//           // Upload to GitHub
+//           const response = await fetch(GITHUB_API_URL + filePath, {
+//             method: 'PUT',
+//             headers: {
+//               'Authorization': `token ${GITHUB_TOKEN}`,
+//               'Content-Type': 'application/json',
+//               'Accept': 'application/vnd.github.v3+json',
+//             },
+//             body: JSON.stringify({
+//               message: 'Upload photo',
+//               content: base64Content,
+//             }),
+//           });
+  
+//           if (!response.ok) {
+//             const errorResponse = await response.json();
+//             throw new Error(`GitHub API Error: ${errorResponse.message}`);
+//           }
+  
+//           const jsonResponse = await response.json();
+//           console.log(`Uploaded ${file.originalname}: ${jsonResponse.content.download_url}`);
+//           return jsonResponse.content.download_url; // Return the URL of the uploaded file
+//         } catch (uploadError) {
+//           console.error(`Error uploading ${file.originalname}:`, uploadError);
+//           throw uploadError; // Re-throw to handle in the outer try/catch
+//         }
+//       }));
+  
+//       // Save the URLs to MongoDB
+//       try {
+//         await Photo.deleteMany({});
+//         const newPhoto = new Photo({ photo: imageUrls });
+//         await newPhoto.save();
+//         res.redirect('/');
+//       } catch (dbError) {
+//         console.error('Database Error:', dbError);
+//         res.status(500).send('Failed to save photo URLs to database');
+//       }
+//     } catch (error) {
+//       console.error('Error:', error);
+//       res.status(500).send('Internal Server Error');
+//     }
+//   });
+
+
+// app.post('/add-photos', upload.array('photos'), async (req, res) => {
+//     const files = req.files;
+  
+//     if (!files || files.length === 0) {
+//       return res.status(400).send('No files uploaded');
+//     }
+  
+//     try {
+//       // Process all files and get their URLs
+//       const imageUrls = await Promise.all(files.map(async (file) => {
+//         const base64Content = file.buffer.toString('base64');
+//         const filePath = `${FOLDER_PATH}${crypto.randomBytes(16).toString('hex')}_${file.originalname}`; // Generate a unique file name
+  
+//         // Log base64 content length and hash for debugging
+//         console.log(`Processing file: ${file.originalname}`);
+//         console.log(`Base64 Content Length: ${base64Content.length}`);
+  
+//         // Upload to GitHub
+//         const response = await fetch(GITHUB_API_URL + filePath, {
+//           method: 'PUT',
+//           headers: {
+//             'Authorization': `token ${GITHUB_TOKEN}`,
+//             'Content-Type': 'application/json',
+//             'Accept': 'application/vnd.github.v3+json',
+//           },
+//           body: JSON.stringify({
+//             message: 'Upload photo',
+//             content: base64Content,
+//           }),
+//         });
+  
+//         const jsonResponse = await response.json();
+//         if (response.ok) {
+//           console.log(`Uploaded ${file.originalname}: ${jsonResponse.content.download_url}`);
+//           return jsonResponse.content.download_url; // Return the URL of the uploaded file
+//         } else {
+//           throw new Error(`Failed to upload ${file.originalname}: ${jsonResponse.message}`);
+//         }
+//       }));
+  
+//       // Save the URLs to MongoDB
+//       await Photo.deleteMany({});
+//       const newPhoto = new Photo({ photo: imageUrls });
+//       await newPhoto.save();
+  
+//       res.redirect('/');
+//     } catch (error) {
+//       console.error('Error:', error);
+//       res.status(500).send('Internal Server Error');
+//     }
+//   });
 
 // app.post("/add-photos", async (req, res) => {
 //     const { instagramUrl } = req.body;
